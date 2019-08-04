@@ -1,0 +1,12 @@
+dependencies {
+    implementation project(':dubbo-api')
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-actuator'
+    implementation 'org.apache.dubbo:dubbo-spring-boot-starter'
+    implementation 'org.apache.dubbo:dubbo'
+    implementation 'org.apache.curator:curator-framework'
+    implementation 'org.apache.curator:curator-recipes'
+    implementation 'org.apache.zookeeper:zookeeper'
+}
+
+mainClassName = "com.github.broncho.dubbo.client.DubboClientApplication"

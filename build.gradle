@@ -1,0 +1,117 @@
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
+buildscript {
+    repositories {
+        mavenLocal()
+        maven {
+            name "alimaven"
+            url "http://maven.aliyun.com/nexus/content/groups/public/"
+
+        }
+        mavenCentral()
+    }
+}
+
+plugins {
+    id 'java'
+    id 'idea'
+    id 'org.springframework.boot' version '2.1.1.RELEASE' apply false
+    id 'io.spring.dependency-management' version '1.0.8.RELEASE' apply false
+}
+
+//所有工程定义
+allprojects {
+
+    sourceCompatibility = System.properties["javaVersion"]
+    targetCompatibility = System.properties["javaVersion"]
+
+    repositories {
+        mavenLocal()
+        maven {
+            name "alimaven"
+            url "http://maven.aliyun.com/nexus/content/groups/public/"
+
+        }
+        mavenCentral()
+    }
+    group 'com.github.broncho'
+    version '1.0.0'
+}
+
+//子工程定义
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'distribution'
+
+    if (!name.contains("api")) {
+        apply plugin: 'org.springframework.boot'
+        apply plugin: 'application'
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom(SpringBootPlugin.BOM_COORDINATES)
+        }
+        dependencies {
+            dependencySet(group: 'org.apache.dubbo', version: '2.7.1') {
+                entry 'dubbo'
+                entry 'dubbo-spring-boot-starter'
+            }
+        }
+        dependencies {
+            dependencySet(group: 'org.apache.curator', version: '4.0.0') {
+                entry 'curator-framework'
+                entry 'curator-recipes'
+            }
+        }
+        dependencies {
+            dependency 'org.apache.zookeeper:zookeeper:3.5.5'
+        }
+    }
+
+    if (!project.name.contains("api")) {
+
+        println "Project ${name}  activeProfile ${System.properties['activeProfile']}"
+
+        jar {
+            enabled true
+        }
+
+        applicationDefaultJvmArgs = ['-Xms256m', '-Xmx256m']
+
+        /**
+         * 生成启动脚本
+         */
+        startScripts() {
+            doFirst {
+                unixStartScriptGenerator.template = resources.text.fromFile(
+                        project.getRootDir().getAbsolutePath() + "/script/unixStartScript.txt"
+                )
+                windowsStartScriptGenerator.template = resources.text.fromFile(
+                        project.getRootDir().getAbsolutePath() + "/script/windowsStartScript.txt"
+
+                )
+            }
+        }
+
+        /**
+         * 开发环境下不能排除配置文件，不然没法通过IDE运行项目
+         */
+        if (!"dev".equals(System.properties['activeProfile'])) {
+            processResources {
+                exclude 'application*.properties'
+            }
+        }
+
+        /**
+         * application*.properties统一复制到config目录
+         * SpringBoot程序启动时从config目录读取配置文件
+         */
+        applicationDistribution.from("src/main/resources") {
+            include 'application*.properties'
+            into 'config'
+        }
+
+    }
+}
